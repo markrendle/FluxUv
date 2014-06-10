@@ -20,14 +20,14 @@
 
         public T Pop()
         {
-            T env;
-            return _pool.TryPop(out env) ? env : new T();
+            T item;
+            return _pool.TryPop(out item) ? item : new T();
         }
 
-        public void Push(T env)
+        public void Push(T item)
         {
-            env.Reset();
-            _pool.Push(env);
+            item.Reset();
+            _pool.Push(item);
         }
 
         private static IEnumerable<T> Initial(int count)

@@ -76,7 +76,7 @@
             http.Write(new ArraySegment<byte>(Encoding.UTF8.GetBytes(CreateResponse())), WriteCallback);
         }
 
-        private void WriteCallback()
+        private void WriteCallback(Http _)
         {
             _stopped = true;
         }

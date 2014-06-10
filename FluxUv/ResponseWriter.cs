@@ -37,7 +37,7 @@ namespace FluxUv
 
             int headerLength = responseLineLength + 2 + MeasureHeaders(headers);
 
-            var body = env.HasResponseBody ? (Stream) env[OwinKeys.ResponseBody] : Stream.Null;
+            var body = (Stream) env[OwinKeys.ResponseBody];
 
             int responseLength = headerLength + (int)body.Length;
 

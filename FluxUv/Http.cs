@@ -1,7 +1,8 @@
-﻿namespace FluxUv.Uv
+﻿namespace FluxUv
 {
     using System;
     using System.Runtime.InteropServices;
+    using Uv;
 
     internal class Http : IPoolObject
     {
@@ -10,9 +11,9 @@
         private readonly Lib.Callback _uvWriteCallback;
         private IntPtr _client;
         private Action<Http, ArraySegment<byte>> _readCallback;
-        private Action _writeCallback;
+        private Action<Http> _writeCallback;
         private ArraySegment<byte> _writeSegment;
-        private FluxEnv _env;
+        private readonly FluxEnv _env = new FluxEnv();
         private readonly GCHandle _handle;
 
         public Http()
@@ -37,7 +38,7 @@
 
         public void Reset()
         {
-            _env = null;
+            _env.Reset();
             _readCallback = NullReadCallback;
             _writeCallback = NullWriteCallback;
             _writeSegment = default(ArraySegment<byte>);
@@ -63,7 +64,7 @@
             BytePool.Intance.Free(buffer);
         }
 
-        public void Write(ArraySegment<byte> data, Action writeCallback)
+        public void Write(ArraySegment<byte> data, Action<Http> writeCallback)
         {
             _writeCallback = writeCallback ?? NullWriteCallback;
             int size = data.Count + 1;
@@ -85,7 +86,7 @@
             {
                 BytePool.Intance.Free(_writeSegment);
             }
-            _writeCallback();
+            _writeCallback(this);
         }
 
         private static WindowsBufferStruct AllocBuffer(IntPtr data, int size)
@@ -99,17 +100,11 @@
         {
         }
 
-        private static void NullWriteCallback()
+        private static void NullWriteCallback(Http http)
         {
         }
 
-        public Http SetEnv(FluxEnv env)
-        {
-            _env = env;
-            return this;
-        }
-
-        public void WriteEnv(Action writeCallback)
+        public void WriteEnv(Action<Http> writeCallback)
         {
             int length = ResponseWriter.Write(_env, out _writeSegment);
             Write(new ArraySegment<byte>(_writeSegment.Array, _writeSegment.Offset, length), writeCallback);

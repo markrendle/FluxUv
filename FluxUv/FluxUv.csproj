@@ -54,7 +54,7 @@
     <Compile Include="OwinKeys.cs" />
     <Compile Include="ResponseWriter.cs" />
     <Compile Include="StockResponses.cs" />
-    <Compile Include="Uv\Http.cs" />
+    <Compile Include="Http.cs" />
     <Compile Include="Uv\HandleType.cs" />
     <Compile Include="Uv\Lib.cs" />
     <Compile Include="Uv\Pointers.cs" />

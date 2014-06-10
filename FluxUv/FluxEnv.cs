@@ -6,12 +6,10 @@ namespace FluxUv
 
     internal class FluxEnv : IDictionary<string, object>, IPoolObject
     {
-        private static readonly int _responseBodyLength = OwinKeys.ResponseBody.Length;
-
         private readonly IDictionary<string, object> _internal;
         private readonly IDictionary<string, string[]> _requestHeaders;
         private readonly IDictionary<string, string[]> _responseHeaders;
-        private bool _responseBody;
+        private readonly MemoryStream _responseBody;
 
         public FluxEnv()
         {
@@ -19,16 +17,12 @@ namespace FluxUv
             _internal[OwinKeys.Version] = "1.0";
             _internal[OwinKeys.RequestHeaders] = _requestHeaders = new Dictionary<string, string[]>(16);
             _internal[OwinKeys.ResponseHeaders] = _responseHeaders = new Dictionary<string, string[]>(16);
-        }
-
-        public bool HasResponseBody
-        {
-            get { return _responseBody; }
+            _internal[OwinKeys.ResponseBody] = _responseBody = new MemoryStream(1024);
         }
 
         public void Reset()
         {
-            _responseBody = false;
+            _responseBody.SetLength(0);
             _requestHeaders.Clear();
             _responseHeaders.Clear();
             _internal.Remove(OwinKeys.ResponseStatusCode);
@@ -100,15 +94,7 @@ namespace FluxUv
 
         public object this[string key]
         {
-            get
-            {
-                if ((!_responseBody) && key.Length == _responseBodyLength && key.Equals(OwinKeys.ResponseBody))
-                {
-                    _responseBody = true;
-                    return _internal[OwinKeys.ResponseBody] = new MemoryStream();
-                }
-                return _internal[key];
-            }
+            get { return _internal[key]; }
             set { _internal[key] = value; }
         }
 

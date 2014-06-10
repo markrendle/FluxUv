@@ -19,7 +19,7 @@
         private IntPtr _loop;
         private readonly Lib.Callback _listenCallback;
         private readonly Action<Http, ArraySegment<byte>> _httpCallback;
-        private readonly Action _writeCallback;
+        private readonly Action<Http> _writeCallback;
         private AppFunc _app;
         private Task _task;
         private readonly Pool<FluxEnv> _envPool = new Pool<FluxEnv>();
@@ -100,9 +100,8 @@
 
         private void HttpCallback(Http http, ArraySegment<byte> data)
         {
-            var env = _envPool.Pop();
-            ByteRequestParser.Parse(data, env);
-            _app(env).ContinueWith(AppCallback, http.SetEnv(env));
+            ByteRequestParser.Parse(data, http.Env);
+            _app(http.Env).ContinueWith(AppCallback, http);
         }
 
         private void AppCallback(Task task, object state)
@@ -110,7 +109,7 @@
             var http = (Http) state;
             if (task.IsFaulted)
             {
-                http.Write(StockResponses.InternalServerError, null);
+                http.Write(StockResponses.InternalServerError, _writeCallback);
             }
             else
             {
@@ -118,8 +117,9 @@
             }
         }
 
-        private void WriteCallback()
+        private void WriteCallback(Http http)
         {
+            _httpPool.Push(http);
         }
     }
 }
