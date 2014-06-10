@@ -48,7 +48,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HttpTest.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="RawHttpTest.cs" />
+    <Compile Include="ServerTest.cs" />
     <Compile Include="TcpFixture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TcpListenTest.cs" />
@@ -61,6 +67,15 @@
       <Project>{331aad87-8575-408e-b152-667c2c41a421}</Project>
       <Name>FluxUv</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ServerTestHtml.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

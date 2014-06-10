@@ -11,12 +11,23 @@
         private IntPtr _client;
         private Action<Http, ArraySegment<byte>> _readCallback;
         private Action _writeCallback;
+        private ArraySegment<byte> _writeSegment;
         private FluxEnv _env;
+        private readonly GCHandle _handle;
 
         public Http()
         {
             _uvReadCallback = ReadCallback;
             _uvWriteCallback = WriteCallback;
+            _handle = GCHandle.Alloc(this);
+        }
+
+        ~Http()
+        {
+            if (_handle.IsAllocated)
+            {
+                _handle.Free();
+            }
         }
 
         public FluxEnv Env
@@ -29,6 +40,7 @@
             _env = null;
             _readCallback = NullReadCallback;
             _writeCallback = NullWriteCallback;
+            _writeSegment = default(ArraySegment<byte>);
         }
 
         public void Run(IntPtr client, Action<Http, ArraySegment<byte>> callback)
@@ -69,6 +81,10 @@
             Pointers.Free(req);
             Lib.uv_close(_client, null);
             Pointers.Free(_client);
+            if (_writeSegment != default (ArraySegment<byte>))
+            {
+                BytePool.Intance.Free(_writeSegment);
+            }
             _writeCallback();
         }
 
@@ -95,7 +111,8 @@
 
         public void WriteEnv(Action writeCallback)
         {
-
+            int length = ResponseWriter.Write(_env, out _writeSegment);
+            Write(new ArraySegment<byte>(_writeSegment.Array, _writeSegment.Offset, length), writeCallback);
         }
     }
 }

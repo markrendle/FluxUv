@@ -47,7 +47,7 @@
     <Compile Include="ByteRequestParser.cs" />
     <Compile Include="DictionaryEx.cs" />
     <Compile Include="FluxEnv.cs" />
-    <Compile Include="FluxEnvPool.cs" />
+    <Compile Include="Pool.cs" />
     <Compile Include="FluxServer.cs" />
     <Compile Include="FluxUvException.cs" />
     <Compile Include="IPoolObject.cs" />

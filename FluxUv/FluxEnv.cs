@@ -2,12 +2,16 @@ namespace FluxUv
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
 
     internal class FluxEnv : IDictionary<string, object>, IPoolObject
     {
+        private static readonly int _responseBodyLength = OwinKeys.ResponseBody.Length;
+
         private readonly IDictionary<string, object> _internal;
         private readonly IDictionary<string, string[]> _requestHeaders;
         private readonly IDictionary<string, string[]> _responseHeaders;
+        private bool _responseBody;
 
         public FluxEnv()
         {
@@ -17,8 +21,14 @@ namespace FluxUv
             _internal[OwinKeys.ResponseHeaders] = _responseHeaders = new Dictionary<string, string[]>(16);
         }
 
+        public bool HasResponseBody
+        {
+            get { return _responseBody; }
+        }
+
         public void Reset()
         {
+            _responseBody = false;
             _requestHeaders.Clear();
             _responseHeaders.Clear();
             _internal.Remove(OwinKeys.ResponseStatusCode);
@@ -90,7 +100,15 @@ namespace FluxUv
 
         public object this[string key]
         {
-            get { return _internal[key]; }
+            get
+            {
+                if ((!_responseBody) && key.Length == _responseBodyLength && key.Equals(OwinKeys.ResponseBody))
+                {
+                    _responseBody = true;
+                    return _internal[OwinKeys.ResponseBody] = new MemoryStream();
+                }
+                return _internal[key];
+            }
             set { _internal[key] = value; }
         }
 

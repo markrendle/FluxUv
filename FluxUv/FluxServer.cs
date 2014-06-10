@@ -14,13 +14,19 @@
         private readonly IPAddress _ipAddress;
         private readonly int _port;
         private int _started;
+        private int _stopped;
         private IntPtr _server;
         private IntPtr _loop;
         private readonly Lib.Callback _listenCallback;
         private readonly Action<Http, ArraySegment<byte>> _httpCallback;
+        private readonly Action _writeCallback;
         private AppFunc _app;
+        private Task _task;
         private readonly Pool<FluxEnv> _envPool = new Pool<FluxEnv>();
         private readonly Pool<Http> _httpPool = new Pool<Http>();
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource(1000);
+
+        private Http _http;
 
         public FluxServer(int port) : this(IPAddress.Loopback, port)
         {
@@ -32,6 +38,7 @@
             _port = port;
             _listenCallback = ListenCallback;
             _httpCallback = HttpCallback;
+            _writeCallback = WriteCallback;
         }
 
         public void Start(AppFunc app)
@@ -57,6 +64,15 @@
             {
                 throw new FluxUvException("uv_listen fail " + error);
             }
+
+            _task = Task.Run(() => Lib.uv_run(_loop, uv_run_mode.UV_RUN_DEFAULT), _cts.Token);
+        }
+
+        public void Stop()
+        {
+            if (_started == 0 || 1 != Interlocked.Increment(ref _stopped)) throw new InvalidOperationException("Server is already stopped.");
+            Lib.uv_stop(_loop);
+            _cts.Cancel();
         }
 
         private void ListenCallback(IntPtr server, int status)
@@ -72,7 +88,7 @@
                 if ((error = Lib.uv_accept(server, client)) == 0)
                 {
                     var http = _httpPool.Pop();
-                    http.Run(client, HttpCallback);
+                    http.Run(client, _httpCallback);
                 }
             }
             if (error != 0)
@@ -98,7 +114,7 @@
             }
             else
             {
-                http.WriteEnv(WriteCallback);
+                http.WriteEnv(_writeCallback);
             }
         }
 
