@@ -87,6 +87,7 @@
                     Lib.uv_read_start_win(client, AllocBuffer, (stream, size, buffer) =>
                     {
                         received = Marshal.PtrToStringAnsi(buffer.@base, size);
+                        Pointers.Free(buffer.@base);
                         Lib.uv_close(client, null);
                         Lib.uv_stop(loop);
                         stopped = true;
@@ -137,7 +138,8 @@
         private WindowsBufferStruct AllocBuffer(IntPtr data, int size)
         {
             var ptr = Pointers.Alloc(size);
-            return Lib.uv_buf_init(ptr, (uint)size);
+            var buf = Lib.uv_buf_init(ptr, (uint)size);
+            return buf;
         }
     }
 }
