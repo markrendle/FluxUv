@@ -1,4 +1,4 @@
-﻿namespace FluxUv
+﻿namespace FluxUv.Uv
 {
     enum uv_err_code
     {

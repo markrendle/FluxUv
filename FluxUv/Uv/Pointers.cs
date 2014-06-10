@@ -1,4 +1,4 @@
-﻿namespace FluxUv
+﻿namespace FluxUv.Uv
 {
     using System;
     using System.Runtime.InteropServices;

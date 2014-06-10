@@ -1,4 +1,4 @@
-﻿namespace FluxUv
+﻿namespace FluxUv.Uv
 {
     public enum uv_run_mode : int
     {

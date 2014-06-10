@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FluxUv
+﻿namespace FluxUv.Uv
 {
+    using System;
     using System.Runtime.InteropServices;
 
     public unsafe class Lib
@@ -13,11 +8,17 @@ namespace FluxUv
         [DllImport("uv")]
         public static extern IntPtr uv_default_loop();
 
+        [DllImport("uv")]
+        public static extern IntPtr uv_loop_new();
+
         [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
         public static extern int uv_tcp_init(IntPtr loop, IntPtr handle);
 
         [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
         public static extern int uv_handle_size(HandleType type);
+
+        [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int uv_req_size(RequestType type);
 
         [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
         public extern static sockaddr_in uv_ip4_addr(string ip, int port);
@@ -29,7 +30,7 @@ namespace FluxUv
         public static extern int uv_tcp_bind(IntPtr server, sockaddr_in sockaddr);
 
         [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int uv_listen(IntPtr stream, int backlog, ListenCallback listenCallback);
+        public static extern int uv_listen(IntPtr stream, int backlog, Callback callback);
 
         [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
         public static extern int uv_run(IntPtr loop, uv_run_mode mode);
@@ -49,8 +50,11 @@ namespace FluxUv
         [DllImport("uv", EntryPoint = "uv_read_start", CallingConvention = CallingConvention.Cdecl)]
         public static extern int uv_read_start_win(IntPtr stream, AllocCallbackWin allocCallback, ReadCallbackWin readCallback);
 
+        [DllImport("uv", EntryPoint = "uv_write", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int uv_write_win(IntPtr req, IntPtr stream, WindowsBufferStruct[] buffers, int bufferCount, Callback callback);
+
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void ListenCallback(IntPtr req, int status);
+        public delegate void Callback(IntPtr req, int status);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate WindowsBufferStruct AllocCallbackWin(IntPtr data, int size);
