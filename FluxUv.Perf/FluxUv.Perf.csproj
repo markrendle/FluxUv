@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{331AAD87-8575-408E-B152-667C2C41A421}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{509AB551-D32D-4D1C-9727-041AFF7E879E}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>FluxUv</RootNamespace>
-    <AssemblyName>FluxUv</AssemblyName>
+    <RootNamespace>FluxUv.Perf</RootNamespace>
+    <AssemblyName>FluxUv.Perf</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -20,17 +21,15 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -42,40 +41,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BufferPin.cs" />
-    <Compile Include="BytePool.cs" />
-    <Compile Include="ByteRequestParser.cs" />
-    <Compile Include="ClientPool.cs" />
-    <Compile Include="DictionaryEx.cs" />
-    <Compile Include="FluxEnv.cs" />
-    <Compile Include="Pool.cs" />
-    <Compile Include="FluxServer.cs" />
-    <Compile Include="FluxUvException.cs" />
-    <Compile Include="IPoolObject.cs" />
-    <Compile Include="OwinKeys.cs" />
-    <Compile Include="ResponseBuffer.cs" />
-    <Compile Include="ResponseLines.cs" />
-    <Compile Include="ResponseWriter.cs" />
-    <Compile Include="StockResponses.cs" />
-    <Compile Include="Http.cs" />
-    <Compile Include="Uv\HandleType.cs" />
-    <Compile Include="Uv\Lib.cs" />
-    <Compile Include="Uv\Pointers.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Uv\RequestType.cs" />
-    <Compile Include="Uv\sockaddr.cs" />
-    <Compile Include="Uv\sockaddr_in.cs" />
-    <Compile Include="Uv\sockaddr_in6.cs" />
-    <Compile Include="Uv\uv_err_code.cs" />
-    <Compile Include="Uv\uv_err_t.cs" />
-    <Compile Include="Uv\uv_loop_t.cs" />
-    <Compile Include="Uv\uv_run_mode.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\libuv\uv.dll">
-      <Link>uv.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FluxUv\FluxUv.csproj">
+      <Project>{331AAD87-8575-408E-B152-667C2C41A421}</Project>
+      <Name>FluxUv</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FluxHtml.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

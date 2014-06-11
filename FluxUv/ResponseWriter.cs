@@ -12,26 +12,33 @@ namespace FluxUv
     {
         private static readonly byte[] ColonSpace = Encoding.UTF8.GetBytes(": ");
         private static readonly byte[] CRLF = Encoding.UTF8.GetBytes("\r\n");
-        public static int Write(FluxEnv env, out ArraySegment<byte> segment)
+        public static ArraySegment<byte> Write(FluxEnv env)
         {
+            byte[] defaultResponseLine;
             object statusCode;
             if (!env.TryGetValue(OwinKeys.ResponseStatusCode, out statusCode))
             {
                 statusCode = 0;
             }
             object reasonPhrase;
-            if (!env.TryGetValue(OwinKeys.ResponseReasonPhrase, out reasonPhrase))
-            {
-                reasonPhrase = "OK";
-            }
+            env.TryGetValue(OwinKeys.ResponseReasonPhrase, out reasonPhrase);
             object responseProtocol;
-            if (!env.TryGetValue(OwinKeys.ResponseProtocol, out responseProtocol))
-            {
-                responseProtocol = "HTTP/1.1";
-            }
+            env.TryGetValue(OwinKeys.ResponseProtocol, out responseProtocol);
 
-            var responseLine = string.Format("{0} {1} {2}\r\n", responseProtocol, statusCode, reasonPhrase);
-            int responseLineLength = responseLine.Length;
+            int responseLineLength;
+            string responseLine;
+            if (reasonPhrase == null && responseProtocol == null)
+            {
+                defaultResponseLine = ResponseLines.Get(statusCode);
+                responseLineLength = defaultResponseLine.Length;
+                responseLine = null;
+            }
+            else
+            {
+                defaultResponseLine = null;
+                responseLine = string.Format("{0} {1} {2}\r\n", responseProtocol, statusCode, reasonPhrase);
+                responseLineLength = responseLine.Length;
+            }
 
             var headers = (IDictionary<string, string[]>) env[OwinKeys.ResponseHeaders];
 
@@ -41,9 +48,16 @@ namespace FluxUv
 
             int responseLength = headerLength + (int)body.Length;
 
-            segment = BytePool.Intance.Get(responseLength);
+            var segment = BytePool.Intance.Get(responseLength);
 
-            Encoding.UTF8.GetBytes(responseLine, 0, responseLineLength, segment.Array, segment.Offset);
+            if (defaultResponseLine != null)
+            {
+                defaultResponseLine.CopyTo(segment.Array, segment.Offset);
+            }
+            else
+            {
+                Encoding.UTF8.GetBytes(responseLine, 0, responseLineLength, segment.Array, segment.Offset);
+            }
 
             int offset = segment.Offset + responseLineLength;
 
@@ -83,9 +97,7 @@ namespace FluxUv
                 body.Read(segment.Array, offset, (int)body.Length);
             }
 
-            var bodyText = Encoding.UTF8.GetString(segment.Array, segment.Offset, responseLength);
-
-            return responseLength;
+            return segment;
         }
 
         private static int MeasureHeaders(IEnumerable<KeyValuePair<string, string[]>> headers)

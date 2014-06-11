@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Flux Performance App</title>
+</head>
+<body>
+	<h1>Flux Performance App</h1>
+</body>
+</html>

@@ -29,7 +29,6 @@ namespace FluxUv
             _internal.Remove(OwinKeys.ResponseReasonPhrase);
             _internal.Remove(OwinKeys.ResponseProtocol);
             _internal.Remove(OwinKeys.RequestBody);
-            _internal.Remove(OwinKeys.ResponseBody);
         }
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()

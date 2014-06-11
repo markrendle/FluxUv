@@ -40,20 +40,8 @@
                     listenStatus = status;
                     return;
                 }
-
-                client = Pointers.Alloc(Lib.uv_handle_size(HandleType.UV_TCP));
-
-                if (Lib.uv_tcp_init(loop, client) == 0 && Lib.uv_accept(server, client) == 0)
-                {
-                    var http = new Http();
-                    http.Run(client, HttpCallback);
-                }
-                else
-                {
-                    Lib.uv_close(client, null);
-                    Pointers.Free(client);
-                    _stopped = true;
-                }
+                var http = new Http(loop, server, HttpCallback, null);
+                http.Run();
 
             }));
             var runTask = Task.Run(() => Lib.uv_run(loop, uv_run_mode.UV_RUN_DEFAULT), cts.Token);
