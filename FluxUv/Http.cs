@@ -9,6 +9,7 @@
     internal class Http : IPoolObject
     {
         private static readonly Lib.AllocCallbackWin AllocCallback = AllocBuffer;
+        private static readonly Action<Http> NullWriteCallback = _ => { };
         private static readonly ArraySegment<byte> EmptySegment = new ArraySegment<byte>(new byte[0]);
         private readonly Lib.ReadCallbackWin _uvReadCallback;
         private readonly Lib.Callback _uvWriteCallback;
@@ -17,16 +18,17 @@
         private readonly IntPtr _loop;
         private readonly IntPtr _server;
         private readonly IntPtr _client;
-        private readonly Action<Http, ArraySegment<byte>> _readCallback;
-        private readonly WindowsBufferStruct[] _bufferStructs = new WindowsBufferStruct[1];
+        private readonly Action<Http, bool> _readCallback;
         private Action<Http> _writeCallback;
         private readonly Action<Http> _closeCallback;
         private ArraySegment<byte> _writeSegment;
         private readonly FluxEnv _env;
         private readonly GCHandle _handle;
         private readonly ResponseBuffer _responseBuffer = new ResponseBuffer();
+        private IntPtr _readBuffer;
+        private int _readBufferSize;
 
-        public Http(IntPtr loop, IntPtr server, Action<Http, ArraySegment<byte>> readCallback, Action<Http> closeCallback)
+        public Http(IntPtr loop, IntPtr server, Action<Http, bool> readCallback, Action<Http> closeCallback)
         {
             _env = new FluxEnv(this);
             _loop = loop;
@@ -52,6 +54,8 @@
         {
             get { return _env; }
         }
+
+        public Exception Exception { get; set; }
 
         public void Reset()
         {
@@ -81,13 +85,20 @@
             if (size < 0)
             {
                 Lib.uv_close(client, null);
-                _readCallback(this, EmptySegment);
+                _readCallback(this, false);
                 return;
             }
-            var byteBuffer = BytePool.Intance.Get(size);
-            Marshal.Copy(buf.@base, byteBuffer.Array, byteBuffer.Offset, size);
-            Pointers.Free(buf.@base);
-            _readCallback(this, byteBuffer);
+            _readBuffer = buf.@base;
+            _readBufferSize = size;
+            _readCallback(this, true);
+        }
+
+        public void ParseEnv()
+        {
+            var byteBuffer = BytePool.Intance.Get(_readBufferSize);
+            Marshal.Copy(_readBuffer, byteBuffer.Array, byteBuffer.Offset, _readBufferSize);
+            Pointers.Free(_readBuffer);
+            ByteRequestParser.Parse(byteBuffer, Env);
         }
 
         public void FreeBuffer(ArraySegment<byte> buffer)
@@ -95,26 +106,29 @@
             BytePool.Intance.Free(buffer);
         }
 
-        public void Write(ArraySegment<byte> data, Action<Http> writeCallback)
+        public void PrepForWrite()
+        {
+            ArraySegment<byte> response;
+            if (Exception != null)
+            {
+                response = StockResponses.InternalServerError;
+            }
+            else
+            {
+                response = ResponseWriter.Write(_env);
+            }
+            _responseBuffer.Write(response);
+        }
+
+        public void Write(Action<Http> writeCallback)
         {
             _writeCallback = writeCallback ?? NullWriteCallback;
-            _writeSegment = data;
-            _responseBuffer.Write(data);
-            try
-            {
-                int error = Lib.uv_write_win(_writeRequest, _client, _responseBuffer.Structs, 1, _uvWriteCallback);
+            int error = Lib.uv_write_win(_writeRequest, _client, _responseBuffer.Structs, 1, _uvWriteCallback);
 
-                if (error != 0)
-                {
-                    WriteCallback(_writeRequest, error);
-                }
-            }
-            catch (AccessViolationException ex)
+            if (error != 0)
             {
-                Trace.TraceError(ex.Message);
-                throw;
+                WriteCallback(_writeRequest, error);
             }
-            
         }
 
         private void WriteCallback(IntPtr req, int status)
@@ -132,20 +146,6 @@
             var ptr = Pointers.Alloc(size);
             var buf = Lib.uv_buf_init(ptr, (uint)size);
             return buf;
-        }
-
-        private static void NullReadCallback(Http arg1, ArraySegment<byte> arg2)
-        {
-        }
-
-        private static void NullWriteCallback(Http http)
-        {
-        }
-
-        public void WriteEnv(Action<Http> writeCallback)
-        {
-            _writeSegment = ResponseWriter.Write(_env);
-            Write(_writeSegment, writeCallback);
         }
 
         private void CloseCallback()

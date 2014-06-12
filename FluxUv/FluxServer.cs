@@ -24,14 +24,14 @@
         private IntPtr _loop;
         private readonly Lib.Callback _listenCallback;
         private readonly Lib.Callback _timerCallback;
-        private readonly Action<Http, ArraySegment<byte>> _httpCallback;
+        private readonly Action<Http, bool> _readCallback;
         private readonly Action<Http> _closeCallback;
         private readonly Action<Http> _writeCallback;
         private AppFunc _app;
         private Task _task;
         private readonly Pool<Http> _httpPool = new Pool<Http>();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private readonly BlockingCollection<FluxEnv> _responses = new BlockingCollection<FluxEnv>(1024);
+        private readonly BlockingCollection<Http> _responses = new BlockingCollection<Http>(1024);
         private RequestDispatcher _requestDispatcher;
 
         public FluxServer(int port) : this(IPAddress.Loopback, port)
@@ -44,7 +44,7 @@
             _port = port;
             _listenCallback = ListenCallback;
             _timerCallback = TimerCallback;
-            _httpCallback = HttpCallback;
+            _readCallback = ReadCallback;
             _writeCallback = WriteCallback;
             _closeCallback = CloseCallback;
         }
@@ -66,25 +66,9 @@
 
             StartListen();
 
-            _httpPool.Init(Enumerable.Range(0, 128).Select(_ => new Http(_loop, _server, _httpCallback, _closeCallback)), () => new Http(_loop, _server, _httpCallback, _closeCallback));
+            _httpPool.Init(Enumerable.Range(0, 128).Select(_ => new Http(_loop, _server, _readCallback, _closeCallback)), () => new Http(_loop, _server, _readCallback, _closeCallback));
 
             Lib.uv_run(_loop, uv_run_mode.UV_RUN_DEFAULT);
-
-            //_task = Task.Run(() => Lib.uv_run(_loop, uv_run_mode.UV_RUN_DEFAULT), _cts.Token).ContinueWith(t =>
-            //{
-            //    if (t.IsFaulted)
-            //    {
-            //        Console.Write("libuv task faulted");
-            //    }
-            //    else if (t.IsCanceled)
-            //    {
-            //        Console.Write("libuv task cancelled");
-            //    }
-            //    else
-            //    {
-            //        Console.Write("libuv task completed");
-            //    }
-            //});
         }
 
         private void StartTimer()
@@ -99,24 +83,16 @@
             {
                 throw new FluxUvException("uv_timer_start fail " + error);
             }
-            _requestDispatcher = new RequestDispatcher(_app, _responses, _cts.Token);
+            _requestDispatcher = new RequestDispatcher(_app, _responses, _cts.Token, 8);
             _requestDispatcher.Start();
         }
 
         private void TimerCallback(IntPtr req, int status)
         {
-            FluxEnv response;
-            while (_responses.TryTake(out response))
+            Http http;
+            while (_responses.TryTake(out http))
             {
-                var http = response.Http;
-                if (response.Exception != null)
-                {
-                    http.Write(StockResponses.InternalServerError, _writeCallback);
-                }
-                else
-                {
-                    http.WriteEnv(_writeCallback);
-                }
+                http.Write(_writeCallback);
             }
         }
 
@@ -155,27 +131,14 @@
             http.Run();
         }
 
-        private void HttpCallback(Http http, ArraySegment<byte> data)
+        private void ReadCallback(Http http, bool run)
         {
-            if (data.Count == 0)
+            if (!run)
             {
                 _httpPool.Push(http);
+                return;
             }
-            ByteRequestParser.Parse(data, http.Env);
-            _requestDispatcher.Dispatch(http.Env);
-        }
-
-        private void AppCallback(Task task, object state)
-        {
-            var http = (Http) state;
-            if (task.IsFaulted)
-            {
-                http.Write(StockResponses.InternalServerError, _writeCallback);
-            }
-            else
-            {
-                http.WriteEnv(_writeCallback);
-            }
+            _requestDispatcher.Dispatch(http);
         }
 
         private void WriteCallback(Http http)

@@ -11,49 +11,62 @@
 
     internal class RequestDispatcher
     {
-        private readonly BlockingCollection<Env> _requests = new BlockingCollection<Env>();
+        private readonly BlockingCollection<Http>[] _requestQueues;
+        private readonly Task[] _requestTasks;
         private readonly AppFunc _app;
-        private readonly BlockingCollection<FluxEnv> _responses;
+        private readonly BlockingCollection<Http> _responses;
         private readonly CancellationToken _token;
         private readonly Action<Task, object> _appContinuation;
         private Task _task;
 
-        public RequestDispatcher(AppFunc app, BlockingCollection<FluxEnv> responses, CancellationToken token)
+        public RequestDispatcher(AppFunc app, BlockingCollection<Http> responses, CancellationToken token) : this(app, responses, token, 1)
         {
+        }
+
+        public RequestDispatcher(AppFunc app, BlockingCollection<Http> responses, CancellationToken token, int threadCount)
+        {
+            _requestQueues = new BlockingCollection<Http>[threadCount];
+            _requestTasks = new Task[threadCount];
             _app = app;
             _responses = responses;
             _token = token;
             _appContinuation = AppContinuation;
         }
 
-        public void Dispatch(Env env)
+        public void Dispatch(Http http)
         {
-            _requests.Add(env, _token);
+            BlockingCollection<Http>.AddToAny(_requestQueues, http);
         }
 
         private void AppContinuation(Task task, object state)
         {
-            var env = (FluxEnv) state;
+            var http = (Http) state;
             if (_token.IsCancellationRequested) return;
             if (task.IsCanceled) return;
             if (task.IsFaulted)
             {
                 Debug.Assert(task.Exception != null);
-                env.Exception = task.Exception;
+                http.Exception = task.Exception;
             }
-            _responses.Add(env, _token);
+            http.PrepForWrite();
+            _responses.Add(http, _token);
         }
 
         public void Start()
         {
-            _task = Task.Run(() =>
+            for (int i = 0; i < _requestQueues.Length; i++)
             {
-                while (!_token.IsCancellationRequested)
+                var collection = _requestQueues[i] = new BlockingCollection<Http>(256);
+                _requestTasks[i] = Task.Run(() =>
                 {
-                    var env = _requests.Take(_token);
-                    _app(env).ContinueWith(_appContinuation, env, _token);
-                }
-            }, _token);
+                    while (!_token.IsCancellationRequested)
+                    {
+                        var http = collection.Take(_token);
+                        http.ParseEnv();
+                        _app(http.Env).ContinueWith(_appContinuation, http, _token);
+                    }
+                }, _token);
+            }
         }
     }
 }

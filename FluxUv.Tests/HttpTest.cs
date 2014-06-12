@@ -59,7 +59,7 @@
             Assert.Equal(Body, _result);
         }
 
-        private void HttpCallback(Http http, ArraySegment<byte> arraySegment)
+        private void HttpCallback(Http http, bool run)
         {
             http.Write(new ArraySegment<byte>(Encoding.UTF8.GetBytes(CreateResponse())), WriteCallback);
         }
@@ -79,6 +79,7 @@
                     task.Wait();
                     _result = task.Result;
                 });
+                _stopped = true;
             }
         }
 
