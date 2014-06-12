@@ -1,5 +1,6 @@
 namespace FluxUv
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
@@ -10,9 +11,11 @@ namespace FluxUv
         private readonly IDictionary<string, string[]> _requestHeaders;
         private readonly IDictionary<string, string[]> _responseHeaders;
         private readonly MemoryStream _responseBody;
+        private readonly Http _http;
 
-        public FluxEnv()
+        public FluxEnv(Http http)
         {
+            _http = http;
             _internal = new Dictionary<string, object>(16);
             _internal[OwinKeys.Version] = "1.0";
             _internal[OwinKeys.RequestHeaders] = _requestHeaders = new Dictionary<string, string[]>(16);
@@ -30,6 +33,10 @@ namespace FluxUv
             _internal.Remove(OwinKeys.ResponseProtocol);
             _internal.Remove(OwinKeys.RequestBody);
         }
+
+        internal Http Http { get { return _http; } }
+
+        internal Exception Exception { get; set; }
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {

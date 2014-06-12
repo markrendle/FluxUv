@@ -8,19 +8,29 @@
     public class ResponseLines
     {
         private static readonly Dictionary<object, byte[]> Lines;
+        private static readonly Dictionary<object, string> Phrases;
+        private const string Unknown = "Unknown";
 
         static ResponseLines()
         {
-            Lines = Enumerable.Range(0, 600).ToDictionary(e => (object)e, e => Encoding.UTF8.GetBytes(string.Format("HTTP/1.1 {0} Unknown\r\n", e)));
-            SetLine(200, "200 OK");
+            Lines = Enumerable.Range(0, 600).ToDictionary(e => (object)e, e => Encoding.UTF8.GetBytes(string.Format("HTTP/1.1 {0} {1}\r\n", e, Unknown)));
+            Phrases = Enumerable.Range(0, 600).ToDictionary(e => (object) e, _ => Unknown);
+            SetPhrase(200, "OK");
         }
 
-        static void SetLine(object key, string text)
+        static void SetPhrase(object key, string text)
         {
-            Lines[key] = Encoding.UTF8.GetBytes("HTTP/1.1 " + text + "\r\n");
+            Phrases[key] = text;
+            Lines[key] = Encoding.UTF8.GetBytes(string.Format("HTTP/1.1 {0} {1}\r\n", key, text));
         }
 
-        public static byte[] Get(object key)
+        public static string GetPhrase(object key)
+        {
+            string phrase;
+            return (Phrases.TryGetValue(key, out phrase)) ? phrase : Unknown;
+        }
+
+        public static byte[] GetLine(object key)
         {
             byte[] line;
             if (Lines.TryGetValue(key, out line)) return line;

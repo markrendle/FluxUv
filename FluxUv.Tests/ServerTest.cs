@@ -19,7 +19,7 @@
         public void OwinServerWorks()
         {
             var server = new FluxServer(Port);
-            server.Start(App);
+            var task = Task.Run(() => server.Start(App));
             try
             {
                 SendHttpRequest();

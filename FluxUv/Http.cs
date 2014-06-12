@@ -3,6 +3,7 @@
     using System;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
+    using System.Text;
     using Uv;
 
     internal class Http : IPoolObject
@@ -21,12 +22,13 @@
         private Action<Http> _writeCallback;
         private readonly Action<Http> _closeCallback;
         private ArraySegment<byte> _writeSegment;
-        private readonly FluxEnv _env = new FluxEnv();
+        private readonly FluxEnv _env;
         private readonly GCHandle _handle;
         private readonly ResponseBuffer _responseBuffer = new ResponseBuffer();
 
         public Http(IntPtr loop, IntPtr server, Action<Http, ArraySegment<byte>> readCallback, Action<Http> closeCallback)
         {
+            _env = new FluxEnv(this);
             _loop = loop;
             _server = server;
             _readCallback = readCallback;
@@ -148,7 +150,6 @@
 
         private void CloseCallback()
         {
-            ClientPool.Free(_client);
             if (_closeCallback != null)
             {
                 _closeCallback(this);

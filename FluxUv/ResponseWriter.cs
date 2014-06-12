@@ -29,14 +29,14 @@ namespace FluxUv
             string responseLine;
             if (reasonPhrase == null && responseProtocol == null)
             {
-                defaultResponseLine = ResponseLines.Get(statusCode);
+                defaultResponseLine = ResponseLines.GetLine(statusCode);
                 responseLineLength = defaultResponseLine.Length;
                 responseLine = null;
             }
             else
             {
                 defaultResponseLine = null;
-                responseLine = string.Format("{0} {1} {2}\r\n", responseProtocol, statusCode, reasonPhrase);
+                responseLine = string.Format("{0} {1} {2}\r\n", responseProtocol ?? "HTTP/1.1", statusCode, reasonPhrase ?? ResponseLines.GetPhrase(statusCode));
                 responseLineLength = responseLine.Length;
             }
 

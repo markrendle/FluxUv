@@ -58,6 +58,7 @@
     <Compile Include="ResponseWriter.cs" />
     <Compile Include="StockResponses.cs" />
     <Compile Include="Http.cs" />
+    <Compile Include="RequestDispatcher.cs" />
     <Compile Include="Uv\HandleType.cs" />
     <Compile Include="Uv\Lib.cs" />
     <Compile Include="Uv\Pointers.cs" />

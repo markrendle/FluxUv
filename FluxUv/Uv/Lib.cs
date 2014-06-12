@@ -52,6 +52,14 @@
 
         [DllImport("uv", EntryPoint = "uv_write", CallingConvention = CallingConvention.Cdecl)]
         public static extern int uv_write_win(IntPtr req, IntPtr stream, WindowsBufferStruct[] buffers, int bufferCount, Callback callback);
+        [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int uv_timer_init(IntPtr loop, IntPtr timer);
+
+        [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int uv_timer_start(IntPtr timer, Callback callback, ulong timeout, ulong repeat);
+
+        [DllImport("uv", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int uv_timer_stop(IntPtr timer);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void Callback(IntPtr req, int status);
